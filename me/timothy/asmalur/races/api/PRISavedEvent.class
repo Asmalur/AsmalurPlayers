@@ -1,1 +1,28 @@
-Test
+package me.timothy.asmalur.races.api;
+
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.Event;
+import org.bukkit.event.HandlerList;
+
+public class PRISavedEvent extends Event
+{
+  private static final HandlerList handlers = new HandlerList();
+  private YamlConfiguration config;
+
+  public PRISavedEvent(YamlConfiguration config)
+  {
+    this.config = config;
+  }
+
+  public YamlConfiguration getConfig() {
+    return this.config;
+  }
+
+  public HandlerList getHandlers() {
+    return handlers;
+  }
+
+  public static HandlerList getHandlerList() {
+    return handlers;
+  }
+}
