@@ -1,0 +1,15 @@
+package me.timothy.asmalur.races;
+
+import java.util.List;
+import org.bukkit.Location;
+
+public class Race
+{
+  public String name;
+  public String prefix;
+  public String postprefix;
+  public String suffix;
+  public String postsuffix;
+  public Location spawn;
+  public List<PeaceZone> peaceZones;
+}
