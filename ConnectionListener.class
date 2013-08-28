@@ -1,0 +1,36 @@
+package me.timothy.asmalur.races.listeners;
+
+import me.timothy.asmalur.races.api.PlayerRaceInfo;
+import me.timothy.asmalur.races.api.RacesAPI;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+
+public class ConnectionListener
+  implements Listener
+{
+  @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
+  public void onLogin(PlayerJoinEvent event)
+  {
+    Player p = event.getPlayer();
+    PlayerRaceInfo pri = RacesAPI.getRaceInfo(p);
+    if (pri != null)
+      pri.apply(p);
+    else
+      p.sendMessage("ERROR: name: '" + p.getName() + "'");
+    event.setJoinMessage(p.getDisplayName() + " has joined the game.");
+  }
+
+  @EventHandler
+  public void onQuit(PlayerQuitEvent event)
+  {
+    event.setQuitMessage(event.getQuitMessage().replace(
+      event.getPlayer().getName(), 
+      event.getPlayer().getDisplayName()));
+
+    RacesAPI.unload(event.getPlayer().getName());
+  }
+}
