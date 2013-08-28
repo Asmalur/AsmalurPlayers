@@ -1,0 +1,5 @@
+debug: false
+replacementexempt:
+  - lore
+  - nick
+  - title
