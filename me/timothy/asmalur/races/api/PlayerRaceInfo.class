@@ -1,0 +1,107 @@
+package me.timothy.asmalur.races.api;
+
+import java.io.IOException;
+import me.timothy.asmalur.races.GMHook;
+import me.timothy.asmalur.races.Race;
+import org.bukkit.ChatColor;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.file.YamlConfigurationOptions;
+import org.bukkit.entity.Player;
+
+public class PlayerRaceInfo
+{
+  public YamlConfiguration initConfig;
+  public String name;
+  public String loreName;
+  public String prefix;
+  public String postprefix;
+  public String suffix;
+  public String postsuffix;
+  public Race race;
+
+  public void apply(Player pl)
+  {
+    String dpName = displayName();
+    pl.setDisplayName(dpName);
+  }
+
+  private boolean emptyPrefix(String pref)
+  {
+    return (pref == null) || 
+      (ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', pref)).isEmpty());
+  }
+
+  public String colorlessLoreName() {
+    return ChatColor.stripColor(coloredLoreName());
+  }
+
+  public String coloredLoreName() {
+    return ChatColor.translateAlternateColorCodes('&', this.loreName);
+  }
+
+  public String displayName() {
+    String pref = "";
+    String suff = "";
+    String postprefix = this.postprefix;
+    if (postprefix == null) {
+      postprefix = GMHook.instance.getPrefix(this.name);
+    }
+    if (this.race != null) {
+      pref = this.prefix == null ? this.race.prefix : this.prefix;
+      suff = this.suffix == null ? this.race.suffix : this.suffix;
+    } else {
+      pref = this.prefix == null ? "" : this.prefix;
+      suff = this.suffix == null ? "" : this.suffix;
+    }
+    if ((!emptyPrefix(pref)) && (
+      (!pref.contains("[")) || (!pref.contains("]")))) {
+      String tmp = null;
+      if (pref.startsWith("&")) {
+        tmp = pref.substring(0, 2);
+        pref = pref.substring(2);
+      }
+      pref = "[" + pref + "]";
+      if (tmp != null) {
+        pref = tmp + pref;
+      }
+    }
+    if (this.race != null) {
+      pref = pref + (postprefix == null ? this.race.postprefix : postprefix);
+      suff = suff + (this.postsuffix == null ? this.race.postsuffix : this.postsuffix);
+    } else {
+      pref = pref + (postprefix == null ? "" : postprefix);
+      suff = suff + (this.postsuffix == null ? "" : this.postsuffix);
+    }
+    if ((!emptyPrefix(pref)) && (!pref.endsWith(" "))) {
+      pref = pref + " ";
+    }
+    String tmp = pref + this.loreName + suff;
+    if (!tmp.endsWith("&r")) {
+      tmp = tmp + "&r";
+    }
+
+    tmp = ChatColor.translateAlternateColorCodes('&', tmp);
+    return tmp;
+  }
+
+  void save(YamlConfiguration config) throws IOException {
+    config.setDefaults(this.initConfig);
+    config.options().copyDefaults(true);
+    config.set("name", this.loreName);
+    if (this.race != null)
+      config.set("race", this.race.name);
+    else
+      config.set("race", "none");
+    if (this.prefix != null) {
+      config.set("prefix", this.prefix);
+    }
+    if (this.postprefix != null) {
+      config.set("postprefix", this.postprefix);
+    }
+    if (this.suffix != null) {
+      config.set("suffix", this.suffix);
+    }
+    if (this.postsuffix != null)
+      config.set("postsuffix", this.postsuffix);
+  }
+}
