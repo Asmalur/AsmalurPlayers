@@ -1,0 +1,466 @@
+package me.timothy.asmalur.races.commands;
+
+import com.avaje.ebean.EbeanServer;
+import com.avaje.ebean.Query;
+import java.lang.reflect.Field;
+import java.util.List;
+import me.captain.dnc.DP;
+import me.captain.dnc.DispNameAPI;
+import me.timothy.asmalur.races.Race;
+import me.timothy.asmalur.races.api.PlayerRaceInfo;
+import me.timothy.asmalur.races.api.RacesAPI;
+import org.bukkit.ChatColor;
+import org.bukkit.Server;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class Commands
+{
+  private static JavaPlugin plugin;
+
+  public static void setPlugin(JavaPlugin pl)
+  {
+    plugin = pl;
+  }
+
+  public static void handleRace(CommandSender sender, Command command, String label, String[] args)
+  {
+    String name = null;
+    if (args.length == 0) {
+      if (!(sender instanceof Player)) {
+        sender.sendMessage(ChatColor.RED + "You must provide an argument if you are not a player!");
+        sender.sendMessage(command.getUsage());
+        return;
+      }
+      name = sender.getName();
+    } else {
+      if (!sender.hasPermission(command.getPermission() + ".other")) {
+        sender.sendMessage(command.getPermissionMessage());
+        return;
+      }
+      name = args[0];
+    }
+    PlayerRaceInfo pri = RacesAPI.getRaceInfo(name, false);
+    if ((pri == null) || (pri.race == null)) {
+      if ((args.length == 2) && 
+        (args[1].equals("force"))) {
+        pri = RacesAPI.getRaceInfo(name);
+      }
+
+      sender.sendMessage(ChatColor.AQUA + "No player by the name '" + name + "' has race information!");
+      return;
+    }
+    sender.sendMessage(ChatColor.AQUA + pri.loreName + " is " + pri.race.name);
+    RacesAPI.clean(pri);
+  }
+
+  public static void handleSetRace(CommandSender sender, Command command, String label, String[] args)
+  {
+    if (args.length < 1) {
+      sender.sendMessage(command.getUsage());
+      return;
+    }
+
+    int i = 0;
+    PlayerRaceInfo pri = null;
+    if (args.length >= 2) {
+      if (!sender.hasPermission(command.getPermission() + ".other")) {
+        sender.sendMessage(command.getPermissionMessage());
+        return;
+      }
+      pri = RacesAPI.getRaceInfo(args[0], false);
+    } else {
+      pri = RacesAPI.getRaceInfo(sender.getName());
+    }
+    if (pri == null) {
+      if (args.length > i + 1) {
+        if (args[(i + 1)].equals("force"))
+          pri = RacesAPI.getRaceInfo(args[0]);
+      }
+      else {
+        sender.sendMessage(ChatColor.RED + 
+          "That player is not online, use the same command with " + 
+          "force on the end (eg /setrace Tjstretchalot orcish force) to load " + 
+          "that player.");
+        sender.sendMessage(ChatColor.DARK_RED + 
+          "This will create that players information if it is not found.");
+        return;
+      }
+    }
+    Race race = RacesAPI.getRaceByName(args[i]);
+    i++;
+    if (race == null) {
+      sender.sendMessage(ChatColor.RED + "No race by that name found.");
+      return;
+    }
+    pri.race = race;
+    sender.sendMessage(ChatColor.GREEN + "Race set!");
+    RacesAPI.clean(pri);
+  }
+
+  public static void handleDebug(CommandSender sender, Command command, String label, String[] args)
+  {
+    List pris;
+    if (args.length == 0) {
+      pris = RacesAPI.getLoadedPlayerInfo();
+      if (pris == null) {
+        sender.sendMessage("It never loaded properly, attempting reload");
+        RacesAPI.load(plugin, "plugins/AsmalurRaces/");
+        pris = RacesAPI.getLoadedPlayerInfo();
+        if (pris == null) {
+          sender.sendMessage("Still null somehow :(");
+          return;
+        }
+      }
+      for (PlayerRaceInfo pri : pris) {
+        sendInfo(sender, pri);
+      }
+      sender.sendMessage("Total Loaded: " + pris.size());
+      return;
+    }
+    switch ((pris = args[0]).hashCode()) { case -1335458389:
+      if (pris.equals("delete"));
+      break;
+    case -934641255:
+      if (pris.equals("reload"));
+      break;
+    case -840442113:
+      if (pris.equals("unload")) break; break;
+    case 3327206:
+      if (pris.equals("load"));
+      break;
+    case 93029230:
+      if (pris.equals("apply"));
+      break;
+    case 94746185:
+      if (!pris.equals("clean")) { return;
+
+        if (args.length < 2) {
+          sender.sendMessage("Need 1 more argument");
+          return;
+        }
+        RacesAPI.unload(args[1]);
+        sender.sendMessage(ChatColor.GREEN + "Successfully unloaded '" + args[1] + "'");
+        return;
+
+        if (args.length < 2) {
+          sender.sendMessage("Need 1 more argument");
+          return;
+        }
+        RacesAPI.delete(args[1]);
+        sender.sendMessage(ChatColor.GREEN + "Succesfully deleted '" + args[1] + "'");
+        return;
+
+        if (args.length < 2) {
+          sender.sendMessage("Need 1 more argument");
+          return;
+        }
+        PlayerRaceInfo pri = RacesAPI.getRaceInfo(args[1]);
+        if (pri == null) {
+          sender.sendMessage("Nobody by that name found");
+          return;
+        }
+        Player player = plugin.getServer().getPlayerExact(pri.name);
+        if (player == null) {
+          sender.sendMessage("Player not online");
+          return;
+        }
+        pri.apply(player);
+        sender.sendMessage("Applied to: " + player.getName() + " as " + player.getDisplayName());
+        return;
+
+        if (args.length < 2) {
+          sender.sendMessage("Need 1 more argument");
+          return;
+        }
+        PlayerRaceInfo pri = RacesAPI.loadRaceInfo(args[1], true);
+        if (pri == null) {
+          sender.sendMessage("pri null");
+          return;
+        }
+        sendInfo(sender, pri);
+      } else
+      {
+        List pris = RacesAPI.getLoadedPlayerInfo();
+        if (pris == null) {
+          sender.sendMessage("Nothing loaded");
+        }
+        else {
+          int counter = 0;
+          for (PlayerRaceInfo prinfo : pris) {
+            if (RacesAPI.clean(prinfo))
+              counter++;
+          }
+          sender.sendMessage(ChatColor.GREEN + Integer.toString(counter) + " players cleaned");
+          return;
+
+          plugin.reloadConfig();
+          sender.sendMessage("Reloaded configuration");
+        }
+      }
+      break; } 
+  }
+
+  private static void sendInfo(CommandSender sender, PlayerRaceInfo pri) {
+    sender.sendMessage(pri.name);
+
+    sender.sendMessage("  lorename: " + pri.loreName + "; pref: " + pri.prefix);
+    sender.sendMessage("  postprefix: " + pri.postprefix + "; postsuffix: " + pri.suffix);
+    String nm = pri.race == null ? "none" : pri.race.name;
+    sender.sendMessage("  suff: " + pri.suffix + "; race: " + nm);
+  }
+
+  public static void handleSetName(CommandSender sender, Command command, String label, String[] args)
+  {
+    PlayerRaceInfo pri = null;
+    int i = 0;
+    if (args.length < 1) {
+      sender.sendMessage(command.getUsage());
+      return;
+    }
+    String nm = null;
+    if ((!sender.hasPermission(command.getPermission() + ".other")) || (args.length == 1)) {
+      if (!(sender instanceof Player)) {
+        handleWhois(sender, command, label, args);
+        return;
+      }
+      nm = sender.getName();
+    } else {
+      nm = args[0];
+      i++;
+    }
+    pri = RacesAPI.getRaceInfo(nm, false);
+    if ((pri == null) && (nm == args[0]) && (!args[(args.length - 1)].equals("force"))) {
+      pri = RacesAPI.getRaceInfo(sender.getName());
+      i--;
+    }
+    if (pri == null) {
+      if (args[(args.length - 1)].equals("force")) {
+        String[] tmp = new String[args.length - 1];
+        for (int q = 0; q < tmp.length; q++) {
+          tmp[q] = args[q];
+        }
+        pri = RacesAPI.getRaceInfo(nm);
+      } else {
+        sender.sendMessage(ChatColor.RED + "Could not find anybody by that player name," + 
+          " append force to your message (eg /nick Tjstretchalot Alexander The Great force)" + 
+          " to force a player load");
+        sender.sendMessage(ChatColor.DARK_RED + "This will create a new player if none is found");
+        return;
+      }
+    }
+    StringBuilder tmp = new StringBuilder();
+    tmp.append(args[i]);
+    i++;
+    for (; i < args.length; i++) {
+      tmp.append(" ").append(args[i]);
+    }
+    pri.loreName = tmp.toString();
+    if ((pri.loreName.startsWith("\"")) && (pri.loreName.endsWith("\"")))
+      pri.loreName = pri.loreName.substring(1, pri.loreName.length() - 1);
+    sender.sendMessage(ChatColor.GREEN + "AsmalurName Set!");
+    RacesAPI.save(pri);
+    Player p = plugin.getServer().getPlayerExact(pri.name);
+    if (p == null) {
+      RacesAPI.unload(pri);
+    } else {
+      pri.apply(p);
+      p.sendMessage(ChatColor.YELLOW + "Your asmalur name has been changed to '" + pri.loreName + "'");
+    }
+  }
+
+  public static void handleClearNick(CommandSender sender, Command command, String label, String[] args)
+  {
+    PlayerRaceInfo pri = null;
+    int i = 0;
+    if (args.length == 0) {
+      if (!(sender instanceof Player)) {
+        handleWhois(sender, command, label, args);
+        return;
+      }
+      pri = RacesAPI.getRaceInfo(sender.getName(), false);
+    } else {
+      if (!sender.hasPermission(command.getPermission() + ".other")) {
+        sender.sendMessage(command.getPermissionMessage());
+        return;
+      }
+      pri = RacesAPI.getRaceInfo(args[0], false);
+      i++;
+    }
+    if (pri == null) {
+      if ((args.length > i) && 
+        (args[i].equals("force"))) {
+        pri = RacesAPI.getRaceInfo(sender.getName());
+      }
+
+      if (pri == null) {
+        sender.sendMessage(ChatColor.RED + "No player by that name found; add " + 
+          "a force argument (eg /clearname Tjstretchalot force) to force" + 
+          " loading of that player");
+        sender.sendMessage(ChatColor.DARK_RED + "This will create a new player " + 
+          "by that name if none is found");
+        return;
+      }
+    }
+    pri.loreName = pri.name;
+    sender.sendMessage("Name Cleared!");
+    RacesAPI.save(pri);
+    RacesAPI.clean(pri);
+  }
+
+  public static void handleTitle(CommandSender sender, Command command, String label, String[] args)
+  {
+    PlayerRaceInfo pri = null;
+    int i = 0;
+    if (args.length < 1) {
+      sender.sendMessage(command.getUsage());
+      return;
+    }
+    String nm = null;
+    if ((!sender.hasPermission(command.getPermission() + ".other")) || (args.length == 1)) {
+      if (!(sender instanceof Player)) {
+        handleWhois(sender, command, label, args);
+        return;
+      }
+      nm = sender.getName();
+    } else {
+      nm = args[0];
+      Player test = plugin.getServer().getPlayer(nm);
+      if (test == null)
+        nm = sender.getName();
+      else {
+        i++;
+      }
+    }
+    pri = RacesAPI.getRaceInfo(nm, false);
+    if ((pri == null) && (nm == args[0]) && (!args[(args.length - 1)].equals("force"))) {
+      pri = RacesAPI.getRaceInfo(sender.getName());
+    }
+    if (pri == null) {
+      if (args[(args.length - 1)].equals("force")) {
+        String[] tmp = new String[args.length - 1];
+        for (int q = 0; q < tmp.length; q++) {
+          tmp[q] = args[q];
+        }
+        pri = RacesAPI.getRaceInfo(nm);
+      } else {
+        sender.sendMessage(ChatColor.RED + "Could not find anybody by that player name," + 
+          " append force to your message (eg /nick Tjstretchalot Alexander The Great force)" + 
+          " to force a player load");
+        sender.sendMessage(ChatColor.DARK_RED + "This will create a new player if none is found");
+        return;
+      }
+    }
+    StringBuilder tmp = new StringBuilder();
+    tmp.append(args[i]);
+    i++;
+    for (; i < args.length; i++) {
+      tmp.append(" ").append(args[i]);
+    }
+    pri.prefix = tmp.toString();
+    if ((pri.prefix.startsWith("\"")) && (pri.prefix.endsWith("\"")))
+      pri.prefix = pri.prefix.substring(1, pri.prefix.length() - 1);
+    sender.sendMessage(ChatColor.GREEN + "AsmalurTitle Set!");
+    RacesAPI.save(pri);
+    RacesAPI.clean(pri);
+  }
+
+  public static void handleClearTitle(CommandSender sender, Command command, String label, String[] args)
+  {
+    PlayerRaceInfo pri = null;
+    int i = 0;
+    if (args.length == 0) {
+      if (!(sender instanceof Player)) {
+        handleWhois(sender, command, label, args);
+        return;
+      }
+      pri = RacesAPI.getRaceInfo(sender.getName(), false);
+    } else {
+      if (!sender.hasPermission(command.getPermission() + ".other")) {
+        sender.sendMessage(command.getPermissionMessage());
+        return;
+      }
+      pri = RacesAPI.getRaceInfo(args[0], false);
+      i++;
+    }
+    if (pri == null) {
+      if ((args.length > i) && 
+        (args[i].equals("force"))) {
+        pri = RacesAPI.getRaceInfo(sender.getName());
+      }
+
+      if (pri == null) {
+        sender.sendMessage(ChatColor.RED + "No player by that name found; add " + 
+          "a force argument (eg /cleartitle Tjstretchalot force) to force" + 
+          " loading of that player");
+        sender.sendMessage(ChatColor.DARK_RED + "This will create a new player " + 
+          "by that name if none is found");
+        return;
+      }
+    }
+    pri.prefix = "";
+    sender.sendMessage("Title Cleared!");
+    RacesAPI.save(pri);
+    RacesAPI.clean(pri);
+  }
+
+  public static void handleWhois(CommandSender sender, Command command, String label, String[] args)
+  {
+    if (args.length < 1) {
+      sender.sendMessage("You need at least 1 argument!");
+      return;
+    }
+    PlayerRaceInfo pri = RacesAPI.getRaceInfo(args[0], false);
+    if (pri == null) {
+      if ((args.length == 2) && 
+        (args[1].equals("force"))) {
+        pri = RacesAPI.getRaceInfo(args[0]);
+      }
+
+      if (pri == null) {
+        sender.sendMessage(ChatColor.YELLOW + "That player could not be found");
+      }
+    }
+    if (pri != null) {
+      sender.sendMessage(ChatColor.GREEN + pri.name + " <-> " + pri.coloredLoreName());
+      RacesAPI.clean(pri);
+    }
+  }
+
+  public static void handleConvertDNC(CommandSender sender, Command command, String label, String[] args)
+  {
+    DispNameAPI dnApi = DispNameAPI.getInstance();
+    JavaPlugin dnPlugin = null;
+    try {
+      Field pluginField = dnApi.getClass().getDeclaredField("plugin");
+      pluginField.setAccessible(true);
+      dnPlugin = (JavaPlugin)pluginField.get(dnApi);
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      return;
+    }
+    List dpQuery = dnPlugin.getDatabase().find(DP.class).findList();
+    for (DP dp : dpQuery) {
+      PlayerRaceInfo pri = new PlayerRaceInfo();
+      pri.name = dp.getPlayerName();
+      pri.loreName = dp.getDisplayName();
+      if (pri.loreName.contains("]")) {
+        pri.prefix = pri.loreName.substring(
+          pri.loreName.indexOf("]"));
+
+        pri.prefix += " ";
+        pri.loreName = pri.loreName.substring(pri.prefix.length());
+        pri.loreName = pri.loreName.trim();
+        if (pri.loreName.startsWith("&")) {
+          String tmp = pri.loreName.substring(0, 2);
+          pri.loreName = pri.loreName.substring(2);
+          pri.postprefix = tmp;
+        }
+      }
+      RacesAPI.save(pri);
+      RacesAPI.clean(pri);
+    }
+  }
+}
