@@ -1,0 +1,60 @@
+package me.timothy.asmalur.races.listeners;
+
+import java.util.List;
+import me.timothy.asmalur.races.PeaceZone;
+import me.timothy.asmalur.races.Race;
+import me.timothy.asmalur.races.api.PlayerRaceInfo;
+import me.timothy.asmalur.races.api.RacesAPI;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+
+public class PeaceZoneHandler
+  implements Listener
+{
+  @EventHandler(ignoreCancelled=true)
+  public void onAttack(EntityDamageByEntityEvent event)
+  {
+    if ((!(event.getEntity() instanceof Player)) || 
+      (!(event.getDamager() instanceof Player))) {
+      return;
+    }
+    Player attacked = (Player)event.getEntity();
+    PlayerRaceInfo attackedPri = RacesAPI.getRaceInfo(attacked);
+    Player attacker = (Player)event.getDamager();
+    PlayerRaceInfo attackerPri = RacesAPI.getRaceInfo(attacker);
+    if ((attackedPri.race != null) && (attackerPri.race != null) && 
+      (attackedPri.race == attackerPri.race)) {
+      event.setDamage(1);
+      attacker.sendMessage(ChatColor.YELLOW + "Even as you go to attack" + 
+        " your own kin, you can't bring yourself to hit very hard");
+    }
+
+    if (attackedPri.race == null)
+      return;
+    List peaceZones = attackedPri.race.peaceZones;
+    if (peaceZones == null)
+      return;
+    for (PeaceZone pz : peaceZones)
+      if (pz.contains(attacked.getLocation())) {
+        event.setCancelled(true);
+        return;
+      }
+  }
+
+  @EventHandler(priority=EventPriority.LOW, ignoreCancelled=true)
+  public void onRespawn(PlayerRespawnEvent event)
+  {
+    if (event.isBedSpawn())
+      return;
+    Player player = event.getPlayer();
+    PlayerRaceInfo pri = RacesAPI.getRaceInfo(player);
+    if ((pri == null) || (pri.race == null) || (pri.race.spawn == null))
+      return;
+    event.setRespawnLocation(pri.race.spawn);
+  }
+}
