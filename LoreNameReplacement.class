@@ -1,0 +1,46 @@
+package me.timothy.asmalur.races.listeners;
+
+import java.util.List;
+import me.timothy.asmalur.races.api.PlayerRaceInfo;
+import me.timothy.asmalur.races.api.RacesAPI;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+
+public class LoreNameReplacement
+  implements Listener
+{
+  private List<String> exempt;
+
+  public void loadExempt(FileConfiguration config)
+  {
+    this.exempt = config.getStringList("replacementexempt");
+  }
+
+  public void saveExempt(FileConfiguration config) {
+    config.set("replacementexempt", this.exempt);
+  }
+
+  @EventHandler
+  public void commPreprocess(PlayerCommandPreprocessEvent event) {
+    String msg = event.getMessage();
+    String comm = msg.substring(1).split(" ")[0];
+    if (this.exempt.contains(comm))
+      return;
+    List pris = RacesAPI.getLoadedPlayerInfo();
+    for (PlayerRaceInfo pri : pris) {
+      msg = msg.replaceAll(pri.colorlessLoreName(), pri.name);
+    }
+    event.setMessage(msg);
+  }
+
+  @EventHandler(priority=EventPriority.HIGHEST)
+  public void onDeathEvent(PlayerDeathEvent event) {
+    event.setDeathMessage(event.getDeathMessage().replace(event.getEntity().getName(), 
+      event.getEntity().getDisplayName()));
+  }
+}
