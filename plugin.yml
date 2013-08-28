@@ -1,0 +1,45 @@
+name: AsmalurPlayers
+main: me.timothy.asmalur.races.AsmalurRaces
+version: 0.9
+description: A races and names plugin for Asmalur
+author: Tjstretchalot, JCW313, Alex
+commands:
+  race:
+    usage: /race [name]
+    description: Get the race, optionally of a player
+    permission: asmalurplayers.race
+    permission-message: You do not have permission to do that
+  setrace:
+    usage: /setrace [ign] (asmalurname)
+    description: Set a players race
+    permission: asmalurplayers.setrace
+    permission-message: You do not have permission to do that
+  nick:
+    usage: /nick [ign] (asmalurname)
+    description: Set a players asmalur name
+    permission: asmalurplayers.nick
+    permission-message: You do not have permission to do that
+  clearname:
+    usage: /clearname [ign]
+    description: Clear someone's asmalur name
+    permission: asmalurplayers.nick 
+    permission-message: You do not have permission to do that
+  title:
+    usage: /title [ign] (asmalurname)
+    description: Set a players title (Use & for color)
+    permission: asmalurplayers.title
+    permission-message: You do not have permission to do that
+  cleartitle:
+    usage: /cleartitle [ign]
+    description: Clears asmalur titles for someone
+    permission: asmalurplayers.title
+    permission-message: You do not have permission to do that
+  whois:
+    usage: /whois [name]
+    description: Find the real name of a player
+    permission: asmalurplayers.whois
+    permission-message: You do not have permission to do that
+  ardebug:
+    description: Debug only
+    permission: asmalurplayers.debug
+    permission-message: You do not have permission to do that
